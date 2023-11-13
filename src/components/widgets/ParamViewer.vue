@@ -3,37 +3,18 @@
          v-bind:style="{width:  width + 'px', height: height + 'px', top: top + 'px', left: left + 'px' }">
         <div id="paneContent">
             <input id="filterbox" placeholder="Filter" v-model="filter">
-            <button @click="saveParametersToFile">save</button>
-            <b-form-checkbox
-              v-if="haveDefaults"
-              v-model="showdiff">
-                Show only changed
-            </b-form-checkbox>
-            <table id="params">
-                <tr>
-                    <th>Param</th>
-                    <th>Value</th>
-                    <th v-if="haveDefaults">Default</th>
-                </tr>
-                <tr v-for="param in filteredData" v-bind:key="param">
-                    <td>{{ param }}</td>
-                    <template v-if="haveDefaults">
-                      <td>{{ isDefaultParam(param) ? '→' : printParam(state.params.values[param])}}</td>
-                      <td>{{ printParam(state.defaultParams[param]) }}</td>
-                    </template>
-                    <template v-else>
-                      <td>{{printParam(state.params.values[param])}}</td>
-                    </template>
-                </tr>
-          </table>
+            <ul id="params">
+                <li v-for="param in filteredData" v-bind:key="param">
+                    {{ param }} : <span style="float: right;">{{state.params.values[param]}}</span>
+                </li>
+            </ul>
         </div>
     </div>
 </template>
 
 <script>
-import { store } from '../Globals.js'
-import { baseWidget } from './baseWidget'
-import { saveAs } from 'file-saver'
+import {store} from '../Globals.js'
+import {baseWidget} from './baseWidget'
 
 export default {
     name: 'ParamViewer',
@@ -51,19 +32,18 @@ export default {
             height: 215,
             left: 540,
             top: 0,
-            forceRecompute: 0,
-            showdiff: false
+            forceRecompute: 0
         }
     },
     methods: {
         waitForMessage (fieldname) {
             this.$eventHub.$emit('loadType', fieldname.split('.')[0])
             let interval
-            const _this = this
+            let _this = this
             let counter = 0
             return new Promise((resolve, reject) => {
                 interval = setInterval(function () {
-                    if (_this.state.messages[fieldname.split('.')[0]]) {
+                    if (_this.state.messages.hasOwnProperty(fieldname.split('.')[0])) {
                         clearInterval(interval)
                         counter += 1
                         resolve()
@@ -77,70 +57,14 @@ export default {
                 }, 2000)
             })
         },
-        saveParametersToFile () {
-            let parameterNameMaxSize = 0
-
-            // Sort parameters alphabetically
-            // We take advantage of sort to also calculate the parameter name maximum size
-            const parameters = Object.entries(this.state.params.values).sort((first, second) => {
-                parameterNameMaxSize = Math.max(parameterNameMaxSize, first[0].length)
-                parameterNameMaxSize = Math.max(parameterNameMaxSize, second[0].length)
-
-                if (first[0] < second[0]) {
-                    return -1
-                }
-                if (first[0] > second[0]) {
-                    return 1
-                }
-                return 0
-            })
-
-            let content = ''
-
-            content += `# Parameters extracted from file ${this.state.file}\n`
-            content += `# Date: ${new Date()}\n`
-
-            const fileName = `${this.state.file}.params`
-
-            for (const param of parameters) {
-                // Calculate space between name and value to make it pretty
-                const space = Array(parameterNameMaxSize - param[0].length + 2).join(' ')
-                content += `${param[0]}${space}${param[1]}\n`
-            }
-
-            const file = new File([content], `${fileName}.txt`, { type: 'text/plain' })
-            saveAs(file)
-        },
         setup () {
-        },
-        printParam (param) {
-            // prints number with just enough decimal places, up to 3, ommiting trailing zeroes
-            return parseFloat(param).toFixed(Math.min(3, Math.max(0, 3 - Math.floor(param).toString().length)))
-        },
-        isDefaultParam (param) {
-            return this.state.params.values[param] === this.state.defaultParams[param]
         }
     },
     computed: {
-        haveDefaults () {
-            return Object.keys(this.state.defaultParams).length > 0
-        },
         filteredData () {
             // eslint-disable-next-line
             let potato = this.forceRecompute
-            return Object.keys(this.state.params.values)
-                .filter(
-                    key => key.indexOf(this.filter.toUpperCase()) !== -1
-                )
-                .filter(
-                    key => {
-                        if (this.showdiff) {
-                            return this.state.params.values[key] !== this.state.defaultParams[key]
-                        } else {
-                            return true
-                        }
-                    }
-                )
+            return Object.keys(this.state.params.values).filter(key => key.indexOf(this.filter.toUpperCase()) !== -1)
         }
     }
 }
@@ -155,6 +79,7 @@ export default {
         color: #141924;
         font-size: 11px;
         font-weight: 600;
+        text-transform: uppercase;
         z-index: 10000;
         box-shadow: 9px 9px 3px -6px rgba(26, 26, 26, 0.699);
         border-radius: 5px;
@@ -203,6 +128,7 @@ export default {
     }
 
     input#filterbox {
+        width: 95%;
         margin: 23px 0px 0px 10px;
         padding: 4px;
         background-color: rgba(255, 255, 255, 0.836);

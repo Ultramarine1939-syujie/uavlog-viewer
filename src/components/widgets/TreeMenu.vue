@@ -1,12 +1,12 @@
 <template>
     <div>
-        <li v-b-toggle="cleanName"  :style="{'margin-left': ''+level*15+'px'}">
+        <li v-b-toggle="label"  :style="{'margin-left': ''+level*15+'px'}">
             <a class="section">
                 {{label}}
                 <i class="fas fa-caret-down"></i></a>
         </li>
         <template v-if="nodes.length === undefined">
-            <b-collapse :id="cleanName">
+            <b-collapse :id="label">
                 <template v-for="(newNode, nodeName) in nodes">
                     <tree-menu
                         v-if="newNode.length === undefined && newNode.messages === undefined"
@@ -14,13 +14,12 @@
                         :nodes="newNode"
                         :level="level+1"
                         :name="name+nodeName+ '/'"
-                        :clean-name="cleanNodeName(nodeName)"
-                        :key="cleanNodeName(nodeName)">
+                        :key="newNode+nodeName">
                     </tree-menu>
                     <li :style="{'margin-left': ''+(level+1)*15+'px'}"
                         v-if="newNode.messages !== undefined && newNode.messages.length !== undefined"
                         class="type"
-                        :key="cleanNodeName(nodeName)">
+                        v-bind:key="nodeName">
                         <a
                             @click="openPreset(newNode.messages)"
                             class="section"
@@ -42,7 +41,7 @@
 </template>
 
 <script>
-import { store } from '../Globals.js'
+import {store} from '../Globals.js'
 
 export default {
     props: {
@@ -50,10 +49,6 @@ export default {
         nodes: Object,
         level: Number,
         name: {
-            type: String,
-            default: ''
-        },
-        cleanName: {
             type: String,
             default: ''
         }
@@ -65,15 +60,12 @@ export default {
         }
     },
     methods: {
-        cleanNodeName (name) {
-            return name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
-        },
         deletePreset (preset) {
             const text = `Are you sure you want to delete the preset "${preset}"?`
             if (confirm(text) === false) {
                 return
             }
-            const myStorage = window.localStorage
+            let myStorage = window.localStorage
             let saved = myStorage.getItem('savedFields')
             if (saved === null) {
                 return
@@ -88,8 +80,8 @@ export default {
             this.$eventHub.$emit('clearPlot')
             this.state.plotOn = true
             this.$nextTick(function () {
-                const msgs = []
-                for (const msg of preset) {
+                let msgs = []
+                for (let msg of preset) {
                     msgs.push([msg[0], msg[1], msg[2]])
                 }
                 this.$eventHub.$emit('addPlots', msgs)

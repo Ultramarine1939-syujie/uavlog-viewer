@@ -14,7 +14,6 @@
         <MessageViewer v-if="state.showMessages"></MessageViewer>
         <DeviceIDViewer v-if="state.showDeviceIDs"></DeviceIDViewer>
         <AttitudeViewer v-if="state.showAttitude"></AttitudeViewer>
-        <MagFitTool v-if="state.showMagfit"></MagFitTool>
         <div class="container-fluid" style="height: 100%; overflow: hidden;">
 
             <sidebar/>
@@ -42,21 +41,20 @@
 
 <script>
 import isOnline from 'is-online'
-import Plotly from '@/components/Plotly.vue'
-import CesiumViewer from '@/components/CesiumViewer.vue'
-import Sidebar from '@/components/Sidebar.vue'
-import TxInputs from '@/components/widgets/TxInputs.vue'
-import ParamViewer from '@/components/widgets/ParamViewer.vue'
-import MessageViewer from '@/components/widgets/MessageViewer.vue'
-import DeviceIDViewer from '@/components/widgets/DeviceIDViewer.vue'
-import AttitudeViewer from '@/components/widgets/AttitudeWidget.vue'
-import { store } from '@/components/Globals.js'
-import { AtomSpinner } from 'epic-spinners'
-import { Color } from 'cesium'
+import Plotly from './Plotly'
+import CesiumViewer from './CesiumViewer'
+import Sidebar from './Sidebar'
+import TxInputs from './widgets/TxInputs'
+import ParamViewer from './widgets/ParamViewer'
+import MessageViewer from './widgets/MessageViewer'
+import DeviceIDViewer from './widgets/DeviceIDViewer'
+import AttitudeViewer from './widgets/AttitudeWidget'
+import {store} from './Globals.js'
+import {AtomSpinner} from 'epic-spinners'
+import {Color} from 'cesium/Cesium'
 import colormap from 'colormap'
-import { DataflashDataExtractor } from '../tools/dataflashDataExtractor'
-import { MavlinkDataExtractor } from '../tools/mavlinkDataExtractor'
-import MagFitTool from '@/components/widgets/MagFitTool.vue'
+import {DataflashDataExtractor} from '../tools/dataflashDataExtractor'
+import {MavlinkDataExtractor} from '../tools/mavlinkDataExtractor'
 import Vue from 'vue'
 
 export default {
@@ -87,7 +85,7 @@ export default {
                     this.dataExtractor = DataflashDataExtractor
                 }
             }
-            if ('FMTU' in this.state.messages && this.state.messages.FMTU.length === 0) {
+            if ('FMTU' in this.state.messages && this.state.messages['FMTU'].length === 0) {
                 this.state.processStatus = 'ERROR PARSING?'
             }
 
@@ -111,7 +109,6 @@ export default {
             this.state.vehicle = this.dataExtractor.extractVehicleType(this.state.messages)
             if (this.state.params === undefined) {
                 this.state.params = this.dataExtractor.extractParams(this.state.messages)
-                this.state.defaultParams = this.dataExtractor.extractDefaultParams(this.state.messages)
                 if (this.state.params !== undefined) {
                     this.$eventHub.$on('cesium-time-changed', (time) => {
                         this.state.params.seek(time)
@@ -144,7 +141,7 @@ export default {
                 this.state.timeAttitude = this.dataExtractor.extractAttitude(this.state.messages, source)
             }
 
-            const list = Object.keys(this.state.timeAttitude)
+            let list = Object.keys(this.state.timeAttitude)
             this.state.lastTime = parseInt(list[list.length - 1])
 
             this.state.trajectorySources = this.dataExtractor.extractTrajectorySources(this.state.messages)
@@ -161,11 +158,6 @@ export default {
                 } catch {
                     console.log('unable to load trajectory')
                 }
-            }
-            try {
-                this.state.metadata = { startTime: this.dataExtractor.extractStartTime(this.state.messages.GPS) }
-            } catch {
-                console.log('unable to load metadata')
             }
             Vue.delete(this.state.messages, 'AHR2')
             Vue.delete(this.state.messages, 'POS')
@@ -188,7 +180,7 @@ export default {
         },
 
         generateColorMMap () {
-            const colorMapOptions = {
+            let colorMapOptions = {
                 colormap: 'hsv',
                 nshades: Math.max(11, this.setOfModes.length),
                 format: 'rgbaString',
@@ -201,7 +193,7 @@ export default {
             colorMapOptions.format = 'float'
             this.state.colors = []
             // this.translucentColors = []
-            for (const rgba of colormap(colorMapOptions)) {
+            for (let rgba of colormap(colorMapOptions)) {
                 this.state.colors.push(new Color(rgba[0], rgba[1], rgba[2]))
                 // this.translucentColors.push(new Cesium.Color(rgba[0], rgba[1], rgba[2], 0.1))
             }
@@ -216,23 +208,23 @@ export default {
         ParamViewer,
         MessageViewer,
         DeviceIDViewer,
-        AttitudeViewer,
-        MagFitTool
+        AttitudeViewer
     },
     computed: {
         mapOk () {
             return (this.state.flightModeChanges !== undefined &&
                     this.state.currentTrajectory !== undefined &&
                     this.state.currentTrajectory.length > 0 &&
+                    this.state.metadata !== null &&
                     (Object.keys(this.state.timeAttitude).length > 0 ||
                         Object.keys(this.state.timeAttitudeQ).length > 0))
         },
         setOfModes () {
-            const set = []
+            let set = []
             if (!this.state.flightModeChanges) {
                 return []
             }
-            for (const mode of this.state.flightModeChanges) {
+            for (let mode of this.state.flightModeChanges) {
                 if (!set.includes(mode[1])) {
                     set.push(mode[1])
                 }

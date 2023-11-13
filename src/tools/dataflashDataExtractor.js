@@ -1,11 +1,10 @@
-import { ParamSeeker } from '../tools/paramseeker'
-import extractStartTime from './datetools'
+import {ParamSeeker} from '../tools/paramseeker'
 
 window.radians = function (a) {
     return 0.0174533 * a
 }
 
-const events = {
+let events = {
     7: 'AP_STATE',
     9: 'INIT_SIMPLE_BEARING',
     10: 'ARMED',
@@ -70,10 +69,10 @@ const events = {
 }
 export class DataflashDataExtractor {
     static extractAttitude (messages, source) {
-        const attitudes = {}
+        let attitudes = {}
         if (source in messages) {
-            const attitudeMsgs = messages[source]
-            for (const i in attitudeMsgs.time_boot_ms) {
+            let attitudeMsgs = messages[source]
+            for (let i in attitudeMsgs.time_boot_ms) {
                 attitudes[parseInt(attitudeMsgs.time_boot_ms[i])] =
                     [
                         window.radians(attitudeMsgs.Roll[i]),
@@ -114,11 +113,11 @@ export class DataflashDataExtractor {
     }
 
     static extractAttitudeQ (messages, source) {
-        const attitudes = {}
+        let attitudes = {}
         if (source in messages && Object.keys(messages[source]).length > 0) {
             console.log(`QUATERNION1: ${source}`)
-            const attitudeMsgs = messages[source]
-            for (const i in attitudeMsgs.time_boot_ms) {
+            let attitudeMsgs = messages[source]
+            for (let i in attitudeMsgs.time_boot_ms) {
                 attitudes[parseInt(attitudeMsgs.time_boot_ms[i])] =
                     [
                         attitudeMsgs.Q1[i],
@@ -135,9 +134,9 @@ export class DataflashDataExtractor {
     static extractFlightModes (messages) {
         let modes = []
         if ('MODE' in messages) {
-            const msgs = messages.MODE
+            let msgs = messages['MODE']
             modes = [[msgs.time_boot_ms[0], msgs.asText[0]]]
-            for (const i in msgs.time_boot_ms) {
+            for (let i in msgs.time_boot_ms) {
                 if (i !== 0 && (msgs.asText[i] !== modes[modes.length - 1][1]) && msgs.asText[i] !== null) {
                     modes.push([msgs.time_boot_ms[i], msgs.asText[i]])
                 }
@@ -148,18 +147,18 @@ export class DataflashDataExtractor {
 
     static extractEvents (messages) {
         let armedState = []
-        if ('STAT' in messages && messages.STAT.length > 0) {
-            const msgs = messages.STAT
+        if ('STAT' in messages && messages['STAT'].length > 0) {
+            let msgs = messages['STAT']
             armedState = [[msgs.time_boot_ms[0], msgs.Armed[0] === 1]]
-            for (const i in msgs.time_boot_ms) {
+            for (let i in msgs.time_boot_ms) {
                 if ((msgs.Armed[i] === 1) !== armedState[armedState.length - 1][1]) {
                     armedState.push([msgs.time_boot_ms[i], msgs.Armed[i] === 1])
                 }
             }
         } else if ('EV' in messages) {
             armedState = []
-            const msgs = messages.EV
-            for (const i in msgs.time_boot_ms) {
+            let msgs = messages['EV']
+            for (let i in msgs.time_boot_ms) {
                 const event = events[msgs.Id[i]]
                 if (event === undefined) {
                     armedState.push([msgs.time_boot_ms[i], 'Unk: ' + msgs.Id[i]])
@@ -172,21 +171,18 @@ export class DataflashDataExtractor {
     }
 
     static extractMission (messages) {
-        const wps = []
+        let wps = []
         if ('CMD' in messages) {
-            const cmdMsgs = messages.CMD
-            for (const i in cmdMsgs.time_boot_ms) {
+            let cmdMsgs = messages['CMD']
+            for (let i in cmdMsgs.time_boot_ms) {
                 if (cmdMsgs.Lat[i] !== 0) {
                     let lat = cmdMsgs.Lat[i]
                     let lon = cmdMsgs.Lng[[i]]
-                    const tot = cmdMsgs.CTot[i]
-                    const id = cmdMsgs.CId[i]
-                    const num = cmdMsgs.CNum[i]
                     if (Math.abs(lat) > 180) {
                         lat = lat / 10e6
                         lon = lon / 10e6
                     }
-                    wps.push([lon, lat, cmdMsgs.Alt[i], tot, id, num])
+                    wps.push([lon, lat, cmdMsgs.Alt[i]])
                 }
             }
         }
@@ -194,13 +190,13 @@ export class DataflashDataExtractor {
     }
 
     static extractFences (messages) {
-        const fences = []
+        let fences = []
         let tempFences = []
         let lastCount = -1
         if ('FNCE' in messages) {
-            console.log(messages.FNCE)
-            const cmdMsgs = messages.FNCE
-            for (const i in cmdMsgs.time_boot_ms) {
+            console.log(messages['FNCE'])
+            let cmdMsgs = messages['FNCE']
+            for (let i in cmdMsgs.time_boot_ms) {
                 if (cmdMsgs.Lat[i] !== 0) {
                     let lat = cmdMsgs.Lat[i]
                     let lon = cmdMsgs.Lng[i]
@@ -225,8 +221,8 @@ export class DataflashDataExtractor {
 
     static extractVehicleType (messages) {
         if ('MSG' in messages) {
-            const msgs = messages.MSG
-            for (const i in msgs.Message) {
+            let msgs = messages['MSG']
+            for (let i in msgs.Message) {
                 if (msgs.Message[i].toLowerCase().indexOf('arduplane') > -1) {
                     return 'airplane'
                 }
@@ -244,26 +240,11 @@ export class DataflashDataExtractor {
         }
     }
 
-    static extractDefaultParams (messages) {
-        const params = {}
-        if ('PARM' in messages) {
-            const paramData = messages.PARM
-            const range = [...Array(paramData.Name.length).keys()]
-            if (paramData.Default === undefined) {
-                return {}
-            }
-            for (const i of range) {
-                params[paramData.Name[i]] = paramData.Default[i]
-            }
-        }
-        return params
-    }
-
     static extractParams (messages) {
-        const params = []
+        let params = []
         if ('PARM' in messages) {
-            const paramData = messages.PARM
-            for (const i in paramData.time_boot_ms) {
+            let paramData = messages['PARM']
+            for (let i in paramData.time_boot_ms) {
                 params.push(
                     [
                         paramData.time_boot_ms[i],
@@ -274,8 +255,8 @@ export class DataflashDataExtractor {
             }
         }
         if ('PARAM_VALUE' in messages) {
-            const paramData = messages.PARAM_VALUE
-            for (const i in paramData.time_boot_ms) {
+            let paramData = messages['PARAM_VALUE']
+            for (let i in paramData.time_boot_ms) {
                 params.push(
                     [
                         paramData.time_boot_ms[i],
@@ -293,16 +274,16 @@ export class DataflashDataExtractor {
     }
 
     static extractTextMessages (messages) {
-        const texts = []
+        let texts = []
         if ('STATUSTEXT' in messages) {
-            const textMsgs = messages.STATUSTEXT
-            for (const i in textMsgs.time_boot_ms) {
+            let textMsgs = messages['STATUSTEXT']
+            for (let i in textMsgs.time_boot_ms) {
                 texts.push([textMsgs.time_boot_ms[i], textMsgs.severity[i], textMsgs.text[i]])
             }
         }
         if ('MSG' in messages) {
-            const textMsgs = messages.MSG
-            for (const i in textMsgs.time_boot_ms) {
+            let textMsgs = messages['MSG']
+            for (let i in textMsgs.time_boot_ms) {
                 texts.push([textMsgs.time_boot_ms[i], 0, textMsgs.Message[i]])
             }
         }
@@ -320,25 +301,18 @@ export class DataflashDataExtractor {
         if ('GPS' in messages) {
             candidates.push('GPS')
         }
-        if ('GPS[0]' in messages) {
-            candidates.push('GPS[0]')
-        }
-        if ('GPS[1]' in messages) {
-            candidates.push('GPS[1]')
-        }
         return candidates
     }
-
     static extractTrajectory (messages, source) {
         // returns a dict with the trajectories found
-        const ret = {}
+        let ret = {}
         if ('POS' in messages && source === 'POS') {
-            const trajectory = []
-            const timeTrajectory = {}
+            let trajectory = []
+            let timeTrajectory = {}
             let startAltitude = null
-            const gpsData = messages.POS
+            let gpsData = messages['POS']
             let start = 0
-            for (const i in gpsData.time_boot_ms) {
+            for (let i in gpsData.time_boot_ms) {
                 const delta = gpsData.time_boot_ms[i] - start
                 if (delta < 200) {
                     continue
@@ -364,7 +338,7 @@ export class DataflashDataExtractor {
                 }
             }
             if (trajectory.length) {
-                ret.POS = {
+                ret['POS'] = {
                     startAltitude: startAltitude,
                     trajectory: trajectory,
                     timeTrajectory: timeTrajectory
@@ -372,12 +346,12 @@ export class DataflashDataExtractor {
             }
         }
         if ('AHR2' in messages && source === 'AHR2') {
-            const trajectory = []
-            const timeTrajectory = {}
+            let trajectory = []
+            let timeTrajectory = {}
             let startAltitude = null
-            const gpsData = messages.AHR2
+            let gpsData = messages['AHR2']
             let start = 0
-            for (const i in gpsData.time_boot_ms) {
+            for (let i in gpsData.time_boot_ms) {
                 const delta = gpsData.time_boot_ms[i] - start
                 if (delta < 200) {
                     continue
@@ -403,58 +377,52 @@ export class DataflashDataExtractor {
                 }
             }
             if (trajectory.length) {
-                ret.AHR2 = {
+                ret['AHR2'] = {
                     startAltitude: startAltitude,
                     trajectory: trajectory,
                     timeTrajectory: timeTrajectory
                 }
             }
         }
-        for (const gpsSource of ['GPS', 'GPS[0]', 'GPS[1]']) {
-            if (gpsSource in messages && source === gpsSource) {
-                const trajectory = []
-                const timeTrajectory = {}
-                let startAltitude = null
-                const gpsData = messages[gpsSource]
-                let start = 0
-                for (const i in gpsData.time_boot_ms) {
-                    const delta = gpsData.time_boot_ms[i] - start
-                    if (delta < 200) {
-                        continue
+        if ('GPS' in messages && source === 'GPS') {
+            let trajectory = []
+            let timeTrajectory = {}
+            let startAltitude = null
+            let gpsData = messages['GPS']
+            let start = 0
+            for (let i in gpsData.time_boot_ms) {
+                const delta = gpsData.time_boot_ms[i] - start
+                if (delta < 200) {
+                    continue
+                }
+                start = gpsData.time_boot_ms[i]
+                if (gpsData.Lat[i] !== 0) {
+                    if (startAltitude === null) {
+                        startAltitude = gpsData.Alt[i]
                     }
-                    start = gpsData.time_boot_ms[i]
-                    if (gpsData.Lat[i] !== 0) {
-                        if (startAltitude === null) {
-                            startAltitude = gpsData.Alt[i]
-                        }
-                        trajectory.push(
-                            [
-                                gpsData.Lng[i] / 1e7,
-                                gpsData.Lat[i] / 1e7,
-                                gpsData.Alt[i] - startAltitude,
-                                gpsData.time_boot_ms[i]
-                            ]
-                        )
-                        timeTrajectory[gpsData.time_boot_ms[i]] = [
+                    trajectory.push(
+                        [
                             gpsData.Lng[i] / 1e7,
                             gpsData.Lat[i] / 1e7,
                             gpsData.Alt[i] - startAltitude,
-                            gpsData.time_boot_ms[i]]
-                    }
+                            gpsData.time_boot_ms[i]
+                        ]
+                    )
+                    timeTrajectory[gpsData.time_boot_ms[i]] = [
+                        gpsData.Lng[i] / 1e7,
+                        gpsData.Lat[i] / 1e7,
+                        gpsData.Alt[i] - startAltitude,
+                        gpsData.time_boot_ms[i]]
                 }
-                if (trajectory.length) {
-                    ret[gpsSource] = {
-                        startAltitude: startAltitude,
-                        trajectory: trajectory,
-                        timeTrajectory: timeTrajectory
-                    }
+            }
+            if (trajectory.length) {
+                ret['GPS'] = {
+                    startAltitude: startAltitude,
+                    trajectory: trajectory,
+                    timeTrajectory: timeTrajectory
                 }
             }
         }
         return ret
-    }
-
-    static extractStartTime (messages) {
-        return extractStartTime(messages)
     }
 }

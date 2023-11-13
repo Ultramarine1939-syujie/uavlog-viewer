@@ -1,6 +1,6 @@
-import { MavlinkDataExtractor } from '../../../src/tools/mavlinkDataExtractor'
-const mavlinkparser = require('../../../src/tools/parsers/mavlinkParser.js')
-const glob = require('glob')
+let mavlinkparser = require('../../../src/tools/parsers/mavlinkParser.js')
+import {MavlinkDataExtractor} from '../../../src/tools/mavlinkDataExtractor'
+var glob = require('glob')
 
 // options is optional
 let files = glob.sync('/tmp/testlogs/*.tlog')
@@ -28,9 +28,9 @@ describe('parse tlogs', () => {
         expect(MavlinkDataExtractor.extractParams(messages)).toBeDefined()
 
         expect(MavlinkDataExtractor.extractTextMessages(messages).length).toBeGreaterThan(0)
-        const trajectory = MavlinkDataExtractor.extractTrajectory(messages)
+        let trajectory = MavlinkDataExtractor.extractTrajectory(messages)
         expect(Object.keys(trajectory).length).toBeGreaterThan(1)
-        const firstItem = Object.keys(trajectory)[0]
+        let firstItem = Object.keys(trajectory)[0]
         expect(trajectory[firstItem].trajectory.length).toBeGreaterThan(10)
     })
 })

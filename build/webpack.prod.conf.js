@@ -11,8 +11,9 @@ const baseWebpackConfig = require('./webpack.base.conf')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const OptimizeCSSPlugin = require('optimize-css-assets-webpack-plugin')
 const cesiumSource =  'node_modules/cesium/Source'
-const cesiumWorkers = 'node_modules/cesium/Build/Cesium/Workers'
+const cesiumWorkers = '../Build/Cesium/Workers'
 const TerserPlugin = require('terser-webpack-plugin')
 const { VueLoaderPlugin }  = require('vue-loader')
 const CompressionPlugin = require('compression-webpack-plugin');
@@ -60,9 +61,18 @@ const webpackConfig = merge(baseWebpackConfig, {
     // extract css into its own file
       new MiniCssExtractPlugin({
       filename: utils.assetsPath('css/[name].[contenthash].css'),
+      // Setting the following option to `false` will not extract CSS from codesplit chunks.
+      // Their CSS will instead be inserted dynamically with style-loader when the codesplit chunk has been loaded by webpack.
+      // It's currently set to `true` because we are seeing that sourcemaps are included in the codesplit bundle as well when it's `false`,
+      // increasing file size: https://github.com/vuejs-templates/webpack/issues/1110
+      allChunks: true,
     }),
-    new webpack.ProvidePlugin({
-      Buffer: ['buffer', 'Buffer'],
+    // Compress extracted CSS. We are using this plugin so that possible
+    // duplicated CSS from different components can be deduped.
+    new OptimizeCSSPlugin({
+      cssProcessorOptions: config.build.productionSourceMap
+        ? { safe: true, map: { inline: false } }
+        : { safe: true }
     }),
     // generate dist index.html with correct asset hash for caching.
     // you can customize output by editing /index.html
@@ -80,19 +90,30 @@ const webpackConfig = merge(baseWebpackConfig, {
         // more options:
         // https://github.com/kangax/html-minifier#options-quick-reference
       },
+      // necessary to consistently work with multiple chunks via CommonsChunkPlugin
+      chunksSortMode: 'dependency'
     }),
+    // keep module.id stable when vendor modules does not change
+    new webpack.HashedModuleIdsPlugin(),
     // enable scope hoisting
     new webpack.optimize.ModuleConcatenationPlugin(),
-    new CopyWebpackPlugin({
-      patterns: [
-        {from: path.join(cesiumSource, 'Assets'), to: 'Assets'},
-        {from: path.join(cesiumSource, 'Widgets'), to: 'Widgets'},
-        {from: cesiumWorkers, to: 'Workers'},
-        // {from: path.join(cesiumSource, 'ThirdParty'), to: 'ThirdParty'},
-        // {from: path.join(cesiumSource, '../Build/Cesium/ThirdParty/Workers'), to: 'ThirdParty/Workers', force: true},
-        // {from: path.join(cesiumSource, '../Build/Cesium/Workers'), to: 'Workers', force: true}
-      ]
-    })
+
+    // copy custom static assets
+    new CopyWebpackPlugin([
+      {
+        from: path.resolve(__dirname, '../static'),
+        to: config.build.assetsSubDirectory,
+        ignore: ['.*']
+      }
+    ]),
+    new CopyWebpackPlugin([
+      {from: path.join(cesiumSource, 'Assets'), to: 'Assets'},
+      {from: path.join(cesiumSource, 'ThirdParty'), to: 'ThirdParty'},
+      {from: path.join(cesiumSource, 'Widgets'), to: 'Widgets'},
+      {from: path.join(cesiumSource, 'Workers'), to: 'Workers'},
+      {from: path.join(cesiumSource, '../Build/Cesium/ThirdParty/Workers'), to: 'ThirdParty/Workers', force: true},
+      {from: path.join(cesiumSource, '../Build/Cesium/Workers'), to: 'Workers', force: true}
+  ])
   ]
 })
 

@@ -4,9 +4,9 @@
 
         <h1 class="brand">
             <a class="github" href="https://github.com/ardupilot/uavlogviewer">
-            <img :src="require('../assets/GitHub-Mark-64px.png').default"/>
+            <img :src="require('../assets/GitHub-Mark-64px.png')"/>
             </a>
-            <a href="/"><b>UAV</b> Log Viewer<i class="fas fa-plane"></i></a><a class="github" href="https://ardupilot.org/copter/docs/common-uavlogviewer.html"><img :src="require('../assets/wiki.svg').default"/></a></h1>
+            <a href="/"><b>UAV</b> Log Viewer<i class="fas fa-plane"></i></a><a class="github" href="https://ardupilot.org/copter/docs/common-uavlogviewer.html"><img :src="require('../assets/wiki.svg')"/></a></h1>
         <!-- TABHOLDER -->
         <i class="fa fa-bars fa-2x toggle-btn" v-b-toggle.menucontent></i>
         <b-collapse class="menu-content collapse out" id="menucontent" visible>
@@ -18,6 +18,11 @@
                 <!-- Plot -->
                 <a :class="selected === 'plot' ? 'selected' : ''" @click="selected='plot'"
                    v-if="state.processDone"> <i class="fas fa-chart-line"></i>Plot</a>
+                <!-- 3D -->
+                <a :class="selected ==='3d' ? 'selected' : ''" @click="selected='3d'"
+                   v-if="state.mapAvailable && state.showMap">  <i class="fas fa-cube"></i> 3D </a>
+                <a :class="selected ==='3d' ? 'selected' : ''" @click="state.showMap=trueselected='3d'"
+                   v-if="state.mapAvailable && !state.showMap">3D</a>
                 <!-- more -->
                 <a :class="selected ==='other' ? 'selected' : ''" @click="selected='other'" v-if="state.processDone">
                     <i class="fas fa-ellipsis-v"></i>
@@ -37,6 +42,68 @@
                     <span class="buildinfo">Commit {{state.commit}}</span>
                     <span class="buildinfo">Built {{state.buildDate}}</span>
                 </div>
+                <div v-if="selected==='3d' && state.mapAvailable">
+                    <!--<li v-if="!state.mapAvailable" @click="state.mapAvailable=true">-->
+                    <!--<a class="section">-->
+                    <!--<i class="fas fa-eye fa-lg"></i> Show 3D View</a>-->
+                    <!--</li>-->
+                    <!--<li v-if="state.mapAvailable" @click="state.mapAvailable=false">-->
+                    <!--<a class="section">-->
+                    <!--<i class="fas fa-eye-slash fa-lg"></i> Hide 3D View</a>-->
+                    <!--</li>-->
+
+                    <!-- CAMERA -->
+                    <div>
+                        <label><i class="fas fa-camera"></i> Camera</label>
+                        <select class="cesium-button" v-model="state.cameraType">
+                            <option value="free">Free</option>
+                            <option value="follow">Follow</option>
+                        </select>
+                    </div>
+                    <!-- CHECKBOXES -->
+                    <div>
+                        <label><input type="checkbox" v-model="state.showWaypoints">
+                        Waypoints <i class="fa fa-map-marker"></i> </label>
+                        <label><input type="checkbox" v-model="state.showTrajectory">
+                        Trajectory <i class="fa fa-map" aria-hidden="true"></i> </label>
+                    </div>
+                    <!-- WINGSPAN -->
+                    <div>
+                        <label><i class="fa fa-fighter-jet" aria-hidden="true"></i> Wingspan (m)
+                            <input max="15" min="0.1" step="0.01" type="range"
+                            class="custom-range" v-model="state.modelScale">
+                            <input class="wingspan-text" size="5" type="text" v-model="state.modelScale">
+                        </label>
+                    </div>
+                    <!-- ALTITUDE OFFSET -->
+                    <div>
+                        <label><i class="fa fa-arrows-v" aria-hidden="true"></i> Altitude Offset (m)
+                            <input max="3000" min="-1000" step="0.01" type="range"
+                            class="custom-range" v-model="state.heightOffset">
+                            <input class="wingspan-text" size="5" type="number" v-model="state.heightOffset">
+                        </label>
+                    </div>
+                    <!-- Trajectory Source -->
+                    <div>
+                        <label><i class="fas fa-map"></i> Trajectory Source</label>
+                        <select class="cesium-button" v-model="state.trajectorySource">
+                            <!-- eslint-disable-next-line vue/no-v-html vue/no-unused-vars -->
+                            <option v-for="item in state.trajectorySources" :key="item">
+                                {{item}}
+                            </option>
+                        </select>
+                    </div>
+                    <!-- Attitude Source -->
+                    <div>
+                        <label><i class="fas fa-map"></i> Attitude Source</label>
+                        <select class="cesium-button" v-model="state.attitudeSource">
+                            <!-- eslint-disable-next-line vue/no-v-html vue/no-unused-vars -->
+                            <option v-for="item in attitudeSources" :key="item">
+                                {{item}}
+                            </option>
+                        </select>
+                    </div>
+                </div>
                 <div v-if="selected==='other'">
                     <!-- PARAM/MESSAGES/RADIO -->
                     <hr>
@@ -51,11 +118,6 @@
                           <i class="fa fa-gamepad circle"></i>
                           <input type="checkbox" v-model="state.showRadio">
                           <a class="check-font"> Radio Sticks </a>
-                        </label>
-                        <label>
-                          <i class="fa fa-compass circle"></i>
-                          <input type="checkbox" v-model="state.showMagfit">
-                          <a class="check-font"> Mag Fit Tool </a>
                         </label>
                         <label v-if="state.textMessages">
                           <i class="fa fa-comment circle"></i>
@@ -124,10 +186,10 @@
 </template>
 <script>
 /* eslint-disable */
-import Dropzone from './SideBarFileManager.vue'
-import MessageMenu from './SideBarMessageMenu.vue'
+import Dropzone from './SideBarFileManager'
+import MessageMenu from './SideBarMessageMenu'
 import {store} from './Globals.js'
-import PlotSetup from './PlotSetup.vue'
+import PlotSetup from './PlotSetup'
 
 export default {
     name: 'sidebar',
@@ -212,6 +274,11 @@ export default {
             this.downloadBlob(this.state.files[filename], filename, 'application/octet-stream')
         }
     },
+    computed: {
+        attitudeSources () {
+            return [...this.state.attitudeSources.quaternions, ...this.state.attitudeSources.eulers]
+        }
+    },
     created () {
         this.$eventHub.$on('set-selected', this.setSelected)
     },
@@ -223,16 +290,8 @@ export default {
     components: {PlotSetup, MessageMenu, Dropzone}
 }
 </script>
-<style scoped>
-
-@media (min-width: 575px) and (max-width: 992px) {
-       a {
-        padding: 2px 60px 2px 55px !important;
-       }
-    }
-</style>
-
 <style>
+
 span.buildinfo {
     font-size: 70%;
     margin-left: 30px;
@@ -468,6 +527,12 @@ a.centered-section {
     }
 
     /* MEDIA QUERIES */
+
+    @media (min-width: 575px) and (max-width: 992px) {
+       a {
+        padding: 2px 60px 2px 55px !important;
+       }
+    }
 
     @media only screen and (max-width: 992px) {
         .nav-side-menu {

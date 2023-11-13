@@ -1,7 +1,6 @@
 import '../mavextra/mavextra'
-import '../mavextra/mymavextra'
 
-export const store = {
+export var store = {
     // currentTrajectory: [],
     trajectorySource: '',
     trajectories: {},
@@ -9,7 +8,6 @@ export const store = {
     timeAttitude: {},
     timeAttitudeQ: {},
     logType: '',
-    defaultParams: {},
     showParams: false,
     showRadio: false,
     showMessages: false,
@@ -25,7 +23,6 @@ export const store = {
     fences: [],
     showFences: true,
     showMap: false,
-    showMagFit: false,
     currentTime: false,
     processDone: false,
     plotOn: false,
@@ -60,6 +57,5 @@ export const store = {
     /* global _COMMIT_ */
     commit: _COMMIT_.slice(0, 6),
     /* global _BUILDDATE_ */
-    buildDate: _BUILDDATE_,
-    childPlots: []
+    buildDate: _BUILDDATE_
 }

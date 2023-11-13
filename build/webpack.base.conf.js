@@ -5,11 +5,13 @@ const config = require('../config')
 const webpack = require('webpack')
 const vueLoaderConfig = require('./vue-loader.conf')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
-const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
-
 // The path to the Cesium source code
 
-function resolve(dir) {
+const cesiumSource =  '../node_modules/cesium/Source'
+const cesiumWorkers = '../../Build/Cesium/Workers'
+
+
+function resolve (dir) {
   return path.join(__dirname, '..', dir)
 }
 
@@ -39,7 +41,20 @@ module.exports = {
       ? config.build.assetsPublicPath
       : config.dev.assetsPublicPath,
     sourcePrefix: ' ',
-    globalObject: 'self'
+    globalObject: 'this'
+  },
+  amd: {
+    // Enable webpack-friendly use of require in Cesium
+    toUrlUndefined: true
+  },
+  resolve: {
+    extensions: ['.js', '.vue', '.json'],
+    alias: {
+      'vue$': 'vue/dist/vue.esm.js',
+      '@': resolve('src'),
+      'cesium': path.resolve(__dirname, cesiumSource)
+    },
+
   },
 
   module: {
@@ -62,26 +77,15 @@ module.exports = {
         test: /\.js$/,
         loader: 'babel-loader',
         include: [resolve('src'), resolve('test'), resolve('node_modules/webpack-dev-server/client'),
-        resolve('node_modules/mavlink_common_v1.0/parsers')]
+          resolve('node_modules/mavlink_common_v1.0/parsers')]
       },
       {
-        test: /\.(png|jpe?g|gif)(\?.*)?$/,
+        test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,
         loader: 'url-loader',
         options: {
           limit: 10000,
           name: utils.assetsPath('img/[name].[hash:7].[ext]')
         }
-      },
-      {
-        test: /\.(svg)$/i,
-        use: [
-          {
-            loader: 'file-loader',
-            options: {
-              esModule: false,
-            },
-          },
-        ],
       },
       {
         test: /\.(mp4|webm|ogg|mp3|wav|flac|aac|glb|tlog)(\?.*)?$/,
@@ -101,53 +105,38 @@ module.exports = {
       }
     ],
   },
-  resolve: {
-    fallback: {
-      // make sure you `npm install path-browserify` to use this
-      crypto: require.resolve("crypto-browserify"),
-      buffer: require.resolve('buffer/'),
-      assert: require.resolve("assert/"),
-      stream: require.resolve("stream-browserify"),
-      url: require.resolve("url/"),
-      https: require.resolve("https-browserify"),
-      http: require.resolve("stream-http"),
-      zlib: require.resolve("browserify-zlib"),
-    },
-    alias: {
-      'vue$': 'vue/dist/vue.esm.js',
-      '@': resolve('src'),
-    },
-  },
   node: {
+    // prevent webpack from injecting useless setImmediate polyfill because Vue
+    // source contains it (although only uses it if it's native).
+    setImmediate: false,
+    // prevent webpack from injecting mocks to Node native modules
+    // that does not make sense for the client
+    dgram: 'empty',
+    fs: 'empty',
+    net: 'empty',
+    tls: 'empty',
+    child_process: 'empty'
   },
-  optimization: {
-    concatenateModules: false,
-    splitChunks: {
-        chunks: 'all',
-        minSize: 30000,
-        maxSize: 300000,
-        minChunks: 1,
-        maxAsyncRequests: 6,
-        maxInitialRequests: 4,
-        automaticNameDelimiter: '~',
-        cacheGroups: {
-            vendors: {
-                test: /[\\/]node_modules[\\/]/,
-                priority: -10
-            },
-            default: {
-                minChunks: 2,
-                priority: -20,
-                reuseExistingChunk: true
+    optimization: {
+        splitChunks: {
+            chunks: 'all',
+            minSize: 30000,
+            maxSize: 0,
+            minChunks: 1,
+            maxAsyncRequests: 6,
+            maxInitialRequests: 4,
+            automaticNameDelimiter: '~',
+            cacheGroups: {
+                vendors: {
+                    test: /[\\/]node_modules[\\/]/,
+                    priority: -10
+                },
+                default: {
+                    minChunks: 2,
+                    priority: -20,
+                    reuseExistingChunk: true
+                }
             }
         }
-    },
-    moduleIds: 'deterministic', //Added this to retain hash of vendor chunks.
-    runtimeChunk: 'single',
-    minimizer: [
-      // For webpack@5 you can use the `...` syntax to extend existing minimizers (i.e. `terser-webpack-plugin`), uncomment the next line
-      `...`,
-      new CssMinimizerPlugin(),
-    ],
-  }
+    }
 }

@@ -1,4 +1,4 @@
-export const modeMappingApm = {
+export let modeMappingApm = {
     0: 'MANUAL',
     1: 'CIRCLE',
     2: 'STABILIZE',
@@ -24,7 +24,7 @@ export const modeMappingApm = {
     23: 'QACRO',
     24: 'THERMAL'
 }
-export const modeMappingAcm = {
+export let modeMappingAcm = {
     0: 'STABILIZE',
     1: 'ACRO',
     2: 'ALT_HOLD',
@@ -50,7 +50,7 @@ export const modeMappingAcm = {
     25: 'SYSTEMID',
     26: 'AUTOROTATE'
 }
-export const modeMappingRover = {
+export let modeMappingRover = {
     0: 'MANUAL',
     1: 'ACRO',
     3: 'STEERING',
@@ -64,7 +64,7 @@ export const modeMappingRover = {
     15: 'GUIDED',
     16: 'INITIALISING'
 }
-export const modeMappingTracker = {
+export let modeMappingTracker = {
     0: 'MANUAL',
     1: 'STOP',
     2: 'SCAN',
@@ -72,7 +72,7 @@ export const modeMappingTracker = {
     10: 'AUTO',
     16: 'INITIALISING'
 }
-export const modeMappingSub = {
+export let modeMappingSub = {
     0: 'STABILIZE',
     1: 'ACRO',
     2: 'ALT_HOLD',
