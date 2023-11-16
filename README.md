@@ -14,6 +14,16 @@ ubuntu 22.04 + nodejs v18.18.2 + npm 9.8.1
 ubuntu 20.04 + nodejs v16.20.2 + npm 8.19.4
 ```
 
+## Usage
+
+```bash
+cd deploy
+./build.sh
+#uavlogviewer.service里的用户名记得改
+```
+
+
+
 ## Build Setup
 
 ``` bash
@@ -24,6 +34,7 @@ npm install
 npm run dev
 
 # build for production with minification
+# dist 用于部署
 npm run build
 
 # run unit tests
@@ -59,7 +70,7 @@ docker logs <container id>
 ## 部分问题解决方案
 
 ```
-code: 'ERR_OSSL_EVP_UNSUPPORTED'
+1、code: 'ERR_OSSL_EVP_UNSUPPORTED'
 ```
 
 **1. 降级到 Node.js v16。（可行）**
@@ -70,4 +81,12 @@ code: 'ERR_OSSL_EVP_UNSUPPORTED'
 
 ```bash
 export NODE_OPTIONS=--openssl-legacy-provider
+```
+
+```
+2、Error: ENOSPC: System limit for number of file watchers reached
+```
+解决这个问题的方法之一是增加系统中监视器的数量限制
+```bash
+echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
 ```
