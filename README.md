@@ -22,6 +22,15 @@ cd deploy
 #uavlogviewer.service里的用户名记得改
 ```
 
+```shell
+#node 18.0 install
+sudo apt-get install -y curl
+curl -fsSL https://deb.nodesource.com/setup_16.x -o nodesource_setup.sh
+sudo -E bash nodesource_setup.sh
+sudo rm nodesource_setup.sh
+sudo apt install nodejs -y
+```
+
 
 
 ## Build Setup
